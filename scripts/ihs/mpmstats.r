@@ -1,7 +1,9 @@
 # See https://www.ibm.com/developerworks/community/blogs/kevgrig/entry/graphing_arbitrary_data_from_the_command_line_using_r?lang=en
+# Sample data in /sampledata/ihs/mpmstats
 # Prereq: > install.packages(c("xts", "xtsExtra", "zoo", "txtplot"), repos=c("http://cran.us.r-project.org","http://R-Forge.R-project.org"))
 # Convert error_log to CSV: OUTPUT=error_log.csv; echo Time,rdy,bsy,rd,wr,ka,log,dns,cls > ${OUTPUT}; grep "mpmstats: rdy " error_log | sed -n "s/\[[^ ]\+ \([^ ]\+\) \([0-9]\+\) \([^ ]\+\) \([0-9]\+\)\] \(.*\)/\1:\2:\4:\3 \5/p" | tr ' ' ',' | cut -d "," -f 1,5,7,9,11,13,15,17,19 >> ${OUTPUT};
 # Run: $ cat error_log.csv | R --silent --no-save -f mpmstats.r 2>/dev/null
+
 require(xts, warn.conflicts=FALSE)
 require(xtsExtra, warn.conflicts=FALSE)
 require(zoo, warn.conflicts=FALSE)
