@@ -30,7 +30,7 @@ local minSynResponseDelta = 1
 local minDiffDelta = 0
 
 -- If true, check if messages are GIOP and print response time statistics.
-local checkGIOP = true
+local checkGIOP = false
 
 -- If checkGIOP=true, update this to search for gaps between GIOP requests and replies. In seconds, e.g. .0000250
 local minGIOPDiffDelta = .01
