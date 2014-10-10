@@ -3,6 +3,7 @@
 use strict;
 use warnings;
 use bigint qw/hex/;
+use Math::BigFloat;
 
 my $argc = $#ARGV + 1;
 if ($argc == 0) {
@@ -11,7 +12,10 @@ if ($argc == 0) {
 }
 
 my $bar = 4294967296;
-my $stackfragdiffmax = 2000000;
+my $stackoverheaddiffmax = 2000000;
+my @sizes = qw( bytes KB MB GB TB );
+my $kb = Math::BigFloat->new("1024");
+my $printDetailedFragmentation = 0;
 
 sub processHex {
   my ($str) = @_;
@@ -20,14 +24,25 @@ sub processHex {
 }
 
 sub getPrintable {
-  my ($x) = @_;
-  return $x->as_hex() . " (" . $x->as_int() . ")";
+  my ($x, $delim) = @_;
+  $delim ||= " / ";
+  my $n = 0;
+  my $size = Math::BigFloat->new($x->copy());
+  while ($size->bcmp($kb) > 0) {
+    $n++;
+    $size->bdiv($kb);
+  }
+  return $x->as_hex() . $delim . $x->as_int() . $delim . sprintf("%.2f", $size) . " " . $sizes[$n];
 }
 
 foreach my $i (0 .. $#ARGV) {
   my $file = $ARGV[$i];
   open(my $filehandle, $file) || die "Can't open $file: $!";
   my $total = Math::BigInt->bzero();
+  my $totalHeaps = Math::BigInt->bzero();
+  my $totalUnclassified = Math::BigInt->bzero();
+  my $totalImages = Math::BigInt->bzero();
+  my $totalFragmentation = Math::BigInt->bzero();
   my $max = Math::BigInt->bzero();
   my $min = $bar->copy();
   my $laststack = 0;
@@ -35,6 +50,7 @@ foreach my $i (0 .. $#ARGV) {
   my $threads = Math::BigInt->bzero();
   my $threadsoverhead = Math::BigInt->bzero();
   my $threadscount = 0;
+  my %fragmentationHistogram = ();
   while(my $line = <$filehandle>) {
     if ($line =~ /\*\s+([\da-fA-F`]+)\s+([\da-fA-F`]+)\s+([\da-fA-F`]+)\s+(.*)$/) {
       my $baseaddr = $1;
@@ -56,14 +72,13 @@ foreach my $i (0 .. $#ARGV) {
           $min = $baseaddr->copy();
         }
         if ($usage =~ /Stack /) {
-
           $threads->badd($regionsize);
           $threadscount++;
 
-          # If the last address was a stack, then check if there's fragmentation
+          # If the last address was a stack, then check if there's overhead
           if ($laststack == 1) {
             my $laststackdiff = $baseaddr->bsub($lastend);
-            if ($laststackdiff->bcmp($stackfragdiffmax) < 0) {
+            if ($laststackdiff->bcmp($stackoverheaddiffmax) < 0) {
               $threads->badd($laststackdiff);
               $total->badd($laststackdiff);
               $threadsoverhead->badd($laststackdiff);
@@ -71,18 +86,48 @@ foreach my $i (0 .. $#ARGV) {
           }
 
           $laststack = 1;
-          $lastend = $endaddrplusone->copy();
         } else {
           $laststack = 0;
+          my $diff = $baseaddr->bsub($lastend);
+          $fragmentationHistogram{$diff}++;
+          $totalFragmentation->badd($diff);
+          if ($usage =~ /Heap \[Handle: ([^\]]+)\]/) {
+            my $handle = $1;
+            $totalHeaps->badd($regionsize);
+          }
+          if ($usage =~ /unclassified/) {
+            $totalUnclassified->badd($regionsize);
+          }
+          if ($usage =~ /Image /) {
+            $totalImages->badd($regionsize);
+          }
         }
-      } else {
-        $laststack = 0;
+        $lastend = $endaddrplusone->copy();
       }
     }
   }
-  print "Total under " . getPrintable($bar) . ": " . getPrintable($total) . "\n";
-  print "Min under " . getPrintable($bar) . ": " . getPrintable($min) . "\n";
-  print "Max under " . getPrintable($bar) . ": " . getPrintable($max) . "\n";
-  print $threadscount . " Threads under " . getPrintable($bar) . ": " . getPrintable($threads) . " (overhead: " . getPrintable($threadsoverhead) . ")\n";
+  print "Bar = " . getPrintable($bar) . "\n";
+  print "Min under bar: " . getPrintable($min) . "\n";
+  print "Max under bar: " . getPrintable($max) . "\n";
+  print $threadscount . " Threads under bar: " . getPrintable($threads) . " (overhead: " . getPrintable($threadsoverhead) . ")\n";
+  print "Total Heaps' usage under bar: " . getPrintable($totalHeaps) . "\n";
+  print "Total Images under bar: " . getPrintable($totalImages) . "\n";
+  print "Total unclassified under bar: " . getPrintable($totalUnclassified) . "\n";
+  print "Total fragmentation under bar: " . getPrintable($totalFragmentation) . "\n";
+  print "Total under bar: " . getPrintable($total) . "\n";
+  if ($printDetailedFragmentation) {
+    print "\n";
+    print "Fragmentation under bar, sorted by count:\n";
+    print "========================================\n";
+    foreach my $key (sort { $fragmentationHistogram{$a} <=> $fragmentationHistogram{$b} } keys %fragmentationHistogram) {    
+      printf "%s,%s,%s\n", $key, $fragmentationHistogram{$key}, getPrintable(Math::BigInt->new($fragmentationHistogram{$key} * $key), ",");
+    }
+    print "\n";
+    print "Fragmentation under bar, sorted by size:\n";
+    print "========================================\n";
+    foreach my $key (sort {$a <=> $b} keys %fragmentationHistogram) {
+      printf "%s,%s\n", $key, $fragmentationHistogram{$key};
+    }
+  }
   close($filehandle);
 }
