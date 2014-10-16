@@ -10,6 +10,7 @@ if [ -f "info.txt" ]; then
 else
   export INPUT_TITLE=vmstat
 fi
+export INPUT_COLS=2
 cat "${VMSTAT}" |\
   perl -n "${DIR}/perfmustgather_vmstat.pl" \
     > "${INPUT_TITLE}.csv"

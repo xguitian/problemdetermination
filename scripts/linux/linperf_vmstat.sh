@@ -8,6 +8,7 @@ command -v R >/dev/null 2>&1 || { echo >&2 "R required"; exit 1; }
 [ ! -f "${SCREEN}" ] && echo "${SCREEN} not found" && exit 1
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 export INPUT_TITLE=vmstat
+export INPUT_COLS=2
 grep VMSTAT_INTERVAL ${SCREEN} |\
   sed 's/^.*\(VMSTAT_INTERVAL = .*\)$/\1/g' |\
     cat - "${VMSTAT}" |\
