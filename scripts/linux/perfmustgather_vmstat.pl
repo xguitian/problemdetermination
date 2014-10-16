@@ -4,12 +4,11 @@ BEGIN {
 }
 $line = $_;
 chomp($line);
-if ($line =~ /VMSTAT_INTERVAL = (\d+)$/) {
+if ($line =~ /Reporting granularity: (\d+) second/) {
   $interval=$1;
-} elsif ($line =~ /^\w+ \w+ \d+ \d+:\d+:\d+ \w+ \d+$/) {
-  $line =~ s/^(.*) (\S+)( \d+)$/\1\3/;
-  $tz = $2;
-  $time = Time::Piece->strptime($line, "%a %b %e %H:%M:%S %Y");
+} elsif ($line =~ /Time:  (\d\d\d\d)(\d\d)(\d\d) ([\d:]+):\d+ (\S+)/) {
+  $tz = $5;
+  $time = Time::Piece->strptime("$1-$2-$3 $4", "%Y-%m-%d %H:%M:%S");
   $first = 0;
   if (!$hasTime) {
     $hasTime = 1;
