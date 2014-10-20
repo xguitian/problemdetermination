@@ -8,7 +8,11 @@ export INPUT_COLS=1
 cat "$1" |\
   perl -n "${DIR}/httpchannel.pl" \
     > "$1.csv"
+export TZ=`head -1 "$1.csv" | sed -n "s/^Time (\([^)]\+\)).*$/\1/p"`
 R --silent --no-save -f "${DIR}/../r/graphcsv.r" < "$1.csv"
+if hash readlink 2>/dev/null; then
+  readlink -f "${INPUT_PNGFILE}" 2>/dev/null
+fi
 if hash eog 2>/dev/null; then
   eog "${INPUT_PNGFILE}" > /dev/null 2>&1 &
 fi

@@ -3,6 +3,16 @@ BEGIN {
   use Time::Piece;
   eval "use Apache::LogRegex; 1" or die "You must install the Perl Apache::LogRegex module. For example: $ sudo cpan Apache::LogRegex";
   require Apache::LogRegex;
+  $min = undef;
+  $max = undef;
+  if (defined $ENV{'MINDATE'}) {
+    $t = Time::Piece->strptime($ENV{'MINDATE'}, "%Y-%m-%d %H:%M:%S");
+    $min = $t->epoch;
+  }
+  if (defined $ENV{'MAXDATE'}) {
+    $t = Time::Piece->strptime($ENV{'MAXDATE'}, "%Y-%m-%d %H:%M:%S");
+    $max = $t->epoch;
+  }
   $logformat = $ENV{'LOGFORMAT'};
   if (not defined $logformat) { die "LOGFORMAT envar not specified." };
   $lr = Apache::LogRegex->new($logformat);
@@ -20,10 +30,15 @@ if (%data) {
     $first = true;
     print "Time ($tz),ResponseTime (ms)\n";
   }
-  if (defined $data{"%D"}) {
-    $responsetime = $data{"%D"} / 1000;
+
+  $timeepoch = $time->epoch;
+
+  if ((!defined($min) || (defined($min) && $timeepoch >= $min)) && (!defined($max) || (defined($max) && $timeepoch <= $max))) {
+    if (defined $data{"%D"}) {
+      $responsetime = $data{"%D"} / 1000;
+    }
+    print $time->strftime("%Y-%m-%d %H:%M:%S") . "," . $responsetime . "\n";
   }
-  print $time->strftime("%Y-%m-%d %H:%M:%S") . "," . $responsetime . "\n";
 } else {
   die "Could not parse line " . $line . "\n";
 }
