@@ -25,17 +25,18 @@ cols = as.integer(if (nchar(Sys.getenv("INPUT_COLS")) == 0) "1" else Sys.getenv(
 timezone = if (nchar(Sys.getenv("TZ")) == 0) "UTC" else Sys.getenv("TZ")
 Sys.setenv(TZ=timezone)
 asciiwidth = as.integer(if (nchar(Sys.getenv("INPUT_ASCIIWIDTH")) == 0) "120" else Sys.getenv("INPUT_ASCIIWIDTH"))
-asciicolumn = as.integer(if (nchar(Sys.getenv("INPUT_ASCIICOLUMN")) == 0) "1" else Sys.getenv("INPUT_ASCIICOLUMN"))
+asciicolumn = as.integer(if (nchar(Sys.getenv("INPUT_ASCIICOLUMN")) == 0) "0" else Sys.getenv("INPUT_ASCIICOLUMN"))
 fontsize = as.numeric(if (nchar(Sys.getenv("INPUT_FONTSIZE")) == 0) "1.3" else Sys.getenv("INPUT_FONTSIZE"))
 
 data = as.xts(read.zoo(file="stdin", format = "%Y-%m-%d %H:%M:%S", header=TRUE, sep=",", tz=timezone))
-x = sapply(index(data), function(time) {as.numeric(strftime(time, format = "%H%M"))})
-txtplot(x, data[,asciicolumn], width=asciiwidth, xlab=paste("Time (", timezone, ")", sep=""), ylab=dimnames(data)[[2]][asciicolumn])
+if(asciicolumn>0) {
+  x = sapply(index(data), function(time) {as.numeric(strftime(time, format = "%H%M"))})
+  txtplot(x, data[,asciicolumn], width=asciiwidth, xlab=paste("Time (", timezone, ")", sep=""), ylab=dimnames(data)[[2]][asciicolumn])
+}
 png(pngfile, width=pngwidth, height=pngheight)
-# Extend data points to entire x-axis; however, this causes overlap of the two axes: xaxs="i"
 plot.xts(
   data,
-  main=paste(title, " (", timezone, ")", sep=""),
+  main=paste(title, " (Timezone ", timezone, ")", sep=""),
   minor.ticks=FALSE,
   yax.loc="left",
   auto.grid=TRUE,
