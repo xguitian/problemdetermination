@@ -6,13 +6,13 @@ $line = $_;
 chomp($line);
 if ($line =~ /VMSTAT_INTERVAL = (\d+)$/) {
   $interval=$1;
-} elsif ($line =~ /^(\w+), (\w+) (\d+), (\d+) (\d+:\d+:\d+) (\w+) \w+$/) {
-  $tz = $2;
+} elsif ($line =~ /^(\w+), (\w+) (\d+), (\d+) (\d+:\d+:\d+) (\w+) (\w+)$/) {
+  $tz = $7;
   $time = Time::Piece->strptime("$1 $2 $3 $4 $5 $6", "%a %b %d %Y %r");
   $first = 0;
   if (!$hasTime) {
     $hasTime = 1;
-    print "Time ($tz),CPU,Runqueue,Blocked,MemoryFree,ContextSwitches,Wait\n";
+    print "Time ($tz),CPU " . $interval . "s,Runqueue,Blocked,MemoryFree,ContextSwitches,Wait\n";
   }
 } elsif ($hasTime && $line =~ /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/) {
   # Ignore first one. See Solaris chapter in WAS Performance Cookbook
