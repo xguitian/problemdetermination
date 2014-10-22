@@ -36,6 +36,8 @@ if (%data) {
   if ((!defined($min) || (defined($min) && $timeepoch >= $min)) && (!defined($max) || (defined($max) && $timeepoch <= $max))) {
     if (defined $data{"%D"}) {
       $responsetime = $data{"%D"} / 1000;
+    } elsif (defined $data{"%T"}) {
+      $responsetime = $data{"%T"} * 1000;
     }
     print $time->strftime("%Y-%m-%d %H:%M:%S") . "," . $responsetime . "\n";
   }

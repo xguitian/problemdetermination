@@ -12,7 +12,7 @@ if ($line =~ /Reporting granularity: (\d+) second/) {
   $first = 0;
   if (!$hasTime) {
     $hasTime = 1;
-    print "Time ($tz),CPU,Runqueue,Blocked,MemoryFree,PageIns,ContextSwitches,Wait,Steal\n";
+    print "Time ($tz),CPU " . $interval . "s,Runqueue,Blocked,MemoryFree,PageIns,ContextSwitches,Wait,Steal\n";
   }
 } elsif ($hasTime && $line =~ /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/) {
   # Ignore first one because `man vmstat`: "The first report produced gives averages since the last reboot."
