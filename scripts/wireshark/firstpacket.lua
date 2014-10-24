@@ -1,4 +1,4 @@
--- Usage: tshark -r ${CAPTURE_FILE} -X lua_script:handshakes.lua | grep handshakes
+-- Usage: tshark -r ${CAPTURE_FILE} -X lua_script:firstpacket.lua
 local lastTime = nil
 
 do
