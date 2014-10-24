@@ -4,6 +4,7 @@ BEGIN {
   eval "use Apache::LogRegex; 1" or die "You must install the Perl Apache::LogRegex module. For example: $ sudo cpan Apache::LogRegex";
   require Apache::LogRegex;
   use List::Util qw(max sum);
+  use POSIX;
 
   %timeseries = ();
 
@@ -29,13 +30,13 @@ if (%data) {
   $responsetime = 0;
   $data{"%t"} =~ /\[(\d+)\/([^\/]+)\/(\d+):([^ ]+) ([^\/]+)\]/;
   $tz = $5;
-  $time = Time::Piece->strptime("$3-$2-$1 $4", "%Y-%b-%d %H:%M:%S");
+  $start = Time::Piece->strptime("$3-$2-$1 $4", "%Y-%b-%d %H:%M:%S");
   if (!$first) {
     $first = true;
-    print "Time ($tz),Avg Response ms,Max Response ms,TPS,Errors per s,Avg Response bytes,Max Response bytes\n";
+    print "Time ($tz),Avg Response ms,Max Response ms,TPS Successes per s,Errors per s,Avg Response bytes,Max Response bytes\n";
   }
 
-  $timeepoch = $time->epoch;
+  $timeepoch = $start->epoch;
 
   if ((!defined($min) || (defined($min) && $timeepoch >= $min)) && (!defined($max) || (defined($max) && $timeepoch <= $max))) {
     $responsetime = -1;
@@ -56,17 +57,19 @@ if (%data) {
       $code = $data{"%>s"};
     }
 
-    $start = $time;
+    $end = $start + 0;
     if ($responsetime > 0) {
-      $start -= ($responsetime / 1000);
+      $end += floor($responsetime / 1000);
     }
 
-    push(@{$timeseries{$time->epoch}{0}}, $responsetime);
-    push(@{$timeseries{$time->epoch}{1}}, $responsebytes);
+    $endepoch = $end->epoch;
+
+    push(@{$timeseries{$endepoch}{0}}, $responsetime);
+    push(@{$timeseries{$endepoch}{1}}, $responsebytes);
     if ($code < 400) {
-      $timeseries{$start->epoch}{2}++;
+      $timeseries{$endepoch}{2}++;
     } else {
-      $timeseries{$start->epoch}{3}++;
+      $timeseries{$endepoch}{3}++;
     }
   }
 } else {

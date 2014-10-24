@@ -7,6 +7,10 @@ chomp($line);
 if ($line =~ /Reporting granularity: (\d+) second/) {
   $interval=$1;
 } elsif ($line =~ /Time:  (\d\d\d\d)(\d\d)(\d\d) ([\d:]+):\d+ (\S+)/) {
+
+  # Because Time can happen multiple times in a file, there's a chance we'll have two lines with the same time
+  # This is more likely with an interval of 1s.
+
   $tz = $5;
   $time = Time::Piece->strptime("$1-$2-$3 $4", "%Y-%m-%d %H:%M:%S");
   $first = 0;
