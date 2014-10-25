@@ -33,7 +33,7 @@ if (%data) {
   $start = Time::Piece->strptime("$3-$2-$1 $4", "%Y-%b-%d %H:%M:%S");
   if (!$first) {
     $first = true;
-    print "Time ($tz),Avg Response ms,Max Response ms,TPS Successes per s,Errors per s,Avg Response bytes,Max Response bytes\n";
+    print "Time ($tz),Avg Resp ms,Max Resp ms,TPS,Arrivals per s,Errors per s,Avg Resp bytes,Max Resp bytes,Percent GETs\n";
   }
 
   $timeepoch = $start->epoch;
@@ -71,6 +71,13 @@ if (%data) {
     } else {
       $timeseries{$endepoch}{3}++;
     }
+    $timeseries{$timeepoch}{4}++;
+    if (defined($data{"%r"}) && $data{"%r"} ne "-" && $data{"%r"} =~ /^[^G]/) {
+      $timeseries{$endepoch}{5}++;
+    } else {
+      $timeseries{$endepoch}{6}++;
+    }
+    $timeseries{$endepoch}{7}++;
   }
 } else {
   die "Could not parse line " . $line . "\n";
@@ -93,7 +100,15 @@ END {
       $avgResponseByteLength = $responseBytesLength > 0 ? sum(@{$val{1}})/$responseBytesLength : 0;
       $maxResponseBytes = $responseBytesLength > 0 ? max(@{$val{1}}) : 0;
 
-      $csv = $avgResponseTime . "," . $maxResponseTime . "," . (defined($val{2}) ? $val{2} : 0) . "," . (defined($val{3}) ? $val{3} : 0) . "," . $avgResponseByteLength . "," . $maxResponseBytes;
+      $numnongets = defined($val{5}) ? $val{5} : 0;
+      $numgets = defined($val{6}) ? $val{6} : 0;
+      $total = defined($val{7}) ? $val{7} : 0;
+      $percentgets = 0;
+      if ($total > 0) {
+	$percentgets = ceil(($numgets / $total) * 100);
+      }
+
+      $csv = $avgResponseTime . "," . $maxResponseTime . "," . (defined($val{2}) ? $val{2} : 0) . "," . (defined($val{4}) ? $val{4} : 0) . "," . (defined($val{3}) ? $val{3} : 0) . "," . $avgResponseByteLength . "," . $maxResponseBytes . "," . $percentgets;
       print $lasttime->strftime("%Y-%m-%d %H:%M:%S") . "," . $csv . "\n";
     }
     if ($size == 1) {
