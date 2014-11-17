@@ -2,7 +2,7 @@
 command -v perl >/dev/null 2>&1 || { echo >&2 "perl required"; exit 1; }
 command -v R >/dev/null 2>&1 || { echo >&2 "R required"; exit 1; }
 if [ $# -ne 2 ] || [ ! -f "$1" ]; then
-  echo "usage: waspluginstats.sh http_plugin.log [totalRequests|affinityRequests|pendingRequests|failedRequests]";
+  echo "usage: waspluginstats.sh http_plugin.log [totalRequests|affinityRequests|nonAffinityRequests|pendingRequests|failedRequests]";
   if [ ! -f "$1" ]; then echo "$1 not found"; fi
   exit 1;
 fi

@@ -36,6 +36,7 @@ if ($line =~ /\[\S+ (\S+) (\d+) (\S+) (\d+)\] (\S+) (\S+) \- STATS: ws_server: s
     $timeseries{$timeepoch}{$server}{"failedRequests"} = $failedRequests;
     $timeseries{$timeepoch}{$server}{"affinityRequests"} = $affinityRequests;
     $timeseries{$timeepoch}{$server}{"totalRequests"} = $totalRequests;
+    $timeseries{$timeepoch}{$server}{"nonAffinityRequests"} = $totalRequests - $affinityRequests;
   }
 }
 
