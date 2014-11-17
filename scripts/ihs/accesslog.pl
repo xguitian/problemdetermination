@@ -64,8 +64,16 @@ if (%data) {
 
     $endepoch = $end->epoch;
 
-    push(@{$timeseries{$endepoch}{0}}, $responsetime);
-    push(@{$timeseries{$endepoch}{1}}, $responsebytes);
+    if ($responsetime > 0) {
+      push(@{$timeseries{$endepoch}{0}}, $responsetime);
+    } else {
+      push(@{$timeseries{$endepoch}{0}}, 0);
+    }
+    if ($responsebytes > 0) {
+      push(@{$timeseries{$endepoch}{1}}, $responsebytes);
+    } else {
+      push(@{$timeseries{$endepoch}{1}}, $responsebytes);
+    }
     if ($code < 400) {
       $timeseries{$endepoch}{2}++;
     } else {

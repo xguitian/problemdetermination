@@ -30,6 +30,8 @@ Sys.setenv(TZ=timezone)
 asciiwidth = as.integer(if (nchar(Sys.getenv("INPUT_ASCIIWIDTH")) == 0) "120" else Sys.getenv("INPUT_ASCIIWIDTH"))
 asciicolumn = as.integer(if (nchar(Sys.getenv("INPUT_ASCIICOLUMN")) == 0) "0" else Sys.getenv("INPUT_ASCIICOLUMN"))
 fontsize = as.numeric(if (nchar(Sys.getenv("INPUT_FONTSIZE")) == 0) "1.3" else Sys.getenv("INPUT_FONTSIZE"))
+usexts = as.numeric(if (nchar(Sys.getenv("INPUT_USEXTS")) == 0) "1" else Sys.getenv("INPUT_USEXTS"))
+zooylab = if (nchar(Sys.getenv("INPUT_ZOOYLAB")) == 0) "" else Sys.getenv("INPUT_ZOOYLAB")
 
 data = as.xts(read.zoo(file="stdin", format = "%Y-%m-%d %H:%M:%S", header=TRUE, sep=",", tz=timezone))
 if(asciicolumn>0) {
@@ -37,15 +39,29 @@ if(asciicolumn>0) {
   txtplot(x, data[,asciicolumn], width=asciiwidth, xlab=paste("Time (", timezone, ")", sep=""), ylab=dimnames(data)[[2]][asciicolumn])
 }
 png(pngfile, width=pngwidth, height=pngheight)
-plot.xts(
-  data,
-  main=paste(title, " (Timezone ", timezone, ")", sep=""),
-  minor.ticks=FALSE,
-  yax.loc="left",
-  auto.grid=TRUE,
-  nc=cols,
-  cex.lab=fontsize,
-  cex.axis=fontsize,
-  cex.main=fontsize,
-  cex.sub=fontsize
-)
+if(usexts) {
+  plot.xts(
+    data,
+    main=paste(title, " (Timezone ", timezone, ")", sep=""),
+    minor.ticks=FALSE,
+    yax.loc="left",
+    auto.grid=TRUE,
+    nc=cols,
+    cex.lab=fontsize,
+    cex.axis=fontsize,
+    cex.main=fontsize,
+    cex.sub=fontsize
+  )
+} else {
+  zoodata = as.zoo(data)
+  tsRainbow = rainbow(ncol(zoodata))
+  plot.zoo(
+    zoodata,
+    xlab="Time",
+    ylab=zooylab,
+    main=paste(title, " (Timezone ", timezone, ")", sep=""),
+    col=tsRainbow,
+    screens=1
+  )
+  legend("topleft", legend=colnames(zoodata), lty = 1, col = tsRainbow)
+}

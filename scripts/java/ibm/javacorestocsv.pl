@@ -12,7 +12,7 @@ if ($argc == 0) {
 
 my %pidlines = ();
 
-my @printClassloaders = ("sun/reflect/DelegatingClassLoader");
+my @printClassloaders = ();
 my @printClassLoadersShort = ();
 foreach my $i (0 .. $#printClassloaders) {
   my $printCl = $printClassloaders[$i];
@@ -20,8 +20,8 @@ foreach my $i (0 .. $#printClassloaders) {
   push(@printClassLoadersShort, $1);
 }
 
-my @countThreadNames = ("net.sf.ehcache.CacheManager");
-my @countThreadFrames = ("org/apache/log4j/helpers/FileWatchdog.run");
+my @countThreadNames = ("WebContainer");
+my @countThreadFrames = ("net/technisys/servlets/StatisticsServlet.doPost", "com/ibm/ws/webcontainer/servlet/ServletWrapperImpl.handleRequest");
 
 print "Time,PID,JRE_VSZ,Classes_VSZ,Threads_VSZ,#JMonitors,#NMonitors,#Threads";
 foreach (@printClassLoadersShort) {
