@@ -1,11 +1,14 @@
 #!/usr/bin/env perl
 BEGIN {
   use Time::Piece;
+  eval "use Apache::LogRegex; 1" or die "You must install the Perl Apache::LogRegex module. For example: $ sudo cpan Apache::LogRegex";
+  require Apache::LogRegex;
   use List::Util qw(max sum);
   use POSIX;
 
   %timeseries = ();
   %servers = ();
+  $type = "totalRequests";
 
   $min = undef;
   $max = undef;
@@ -17,27 +20,27 @@ BEGIN {
     $t = Time::Piece->strptime($ENV{'MAXDATE'}, "%Y-%m-%d %H:%M:%S");
     $max = $t->epoch;
   }
-  $type = $ENV{'STATS_TYPE'};
+  $logformat = $ENV{'LOGFORMAT'};
+  if (not defined $logformat) { die "LOGFORMAT envar not specified." };
+  $lr = Apache::LogRegex->new($logformat);
+  die "Unable to parse log line: $@" if ($@);
 }
 $line = $_;
 chomp($line);
+%data = $lr->parse($line);
+if (%data) {
+  $data{"%t"} =~ /\[(\d+)\/([^\/]+)\/(\d+):([^ ]+) ([^\/]+)\]/;
+  $tz = $5;
+  $start = Time::Piece->strptime("$3-$2-$1 $4", "%Y-%b-%d %H:%M:%S");
+  $timeepoch = $start->epoch;
 
-if ($line =~ /\[\S+ (\S+) (\d+) (\S+) (\d+)\] (\S+) (\S+) \- STATS: ws_server: serverSetFailoverStatus: Server (\S+) : pendingRequests (\d+) failedRequests (\d+) affinityRequests (\d+) totalRequests (\d+)\./) {
-  $server = $7;
-  $servers{$server} = 1;
-  $pendingRequests = $8;
-  $failedRequests = $9;
-  $affinityRequests = $10;
-  $totalRequests = $11;
-  $time = Time::Piece->strptime("$4-$1-$2 $3", "%Y-%b-%d %H:%M:%S");
-  $timeepoch = $time->epoch;
   if ((!defined($min) || (defined($min) && $timeepoch >= $min)) && (!defined($max) || (defined($max) && $timeepoch <= $max))) {
-    $timeseries{$timeepoch}{$server}{"pendingRequests"} = $pendingRequests;
-    $timeseries{$timeepoch}{$server}{"failedRequests"} = $failedRequests;
-    $timeseries{$timeepoch}{$server}{"affinityRequests"} = $affinityRequests;
-    $timeseries{$timeepoch}{$server}{"totalRequests"} = $totalRequests;
-    $timeseries{$timeepoch}{$server}{"nonAffinityRequests"} = $totalRequests - $affinityRequests;
+    $server = $data{"WAS=%{WAS}e"};
+    $servers{$server} = 1;
+    $timeseries{$timeepoch}{$server}{$type}++;
   }
+} else {
+  die "Could not parse line " . $line . "\n";
 }
 
 END {
@@ -47,7 +50,7 @@ END {
     die "Insufficient data points found\n";
   } else {
     @serverNames = ();
-    print "Time";
+    print "Time ($tz)";
     foreach my $server (sort keys %servers) {
       push(@serverNames, $server);
       print ",$server";
