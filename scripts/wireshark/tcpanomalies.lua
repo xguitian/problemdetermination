@@ -15,7 +15,7 @@
 -- tcpanomalies.lua: Started
 -- tcpanomalies.lua: First packet time: "Mar 22, 2014 07:08:36.967090000 PDT"
 -- tcpanomalies.lua: ===================================
--- tcpanomalies.lua: ERROR: Received RST in response to SYN after 2.4080276489258e-05 seconds. First SYN sent: "Mar 22, 2014 07:08:36.967090000 PDT", Stream 0, Frame: 1, Source: nil:36016, Destination: nil:80, Current frame time: "Mar 22, 2014 07:08:36.967114000 PDT" (Frame: 2)
+-- tcpanomalies.lua: ERROR: Received RST in response to SYN after 2.4080276489258e-05 seconds. First SYN sent: "Mar 22, 2014 07:08:36.967090000 PDT", Stream 0, Frame: 1, Source: nil:36016, Destination: nil:80,  frame time: "Mar 22, 2014 07:08:36.967114000 PDT" (Frame: 2)
 -- tcpanomalies.lua: WARNING: Stream 1 did not get a response by the end of the capture. First SYN sent: "Mar 22, 2014 07:08:36.967251000 PDT", Stream 1, Frame: 3, Source: 127.0.0.1:45317, Destination: 127.0.0.1:80, Current frame time:  (Frame: )
 -- tcpanomalies.lua: ===================================
 -- tcpanomalies.lua: Last packet time: "Mar 22, 2014 07:08:36.967251000 PDT"
@@ -29,11 +29,19 @@ local minSynResponseDelta = 1
 -- Update this to search for gaps between packets after the handshake. In seconds, e.g. .0000250
 local minDiffDelta = 0
 
+-- Whether to warn on a suspected TCP retransmission frame
+local warnSuspectedRetransmission = true
+
+-- Whether to warn on a suspected TCP retransmission frame
+local suspectedRetransmissionsCount = 0
+
 -- If true, check if messages are GIOP and print response time statistics.
 local checkGIOP = false
 
 -- If checkGIOP=true, update this to search for gaps between GIOP requests and replies. In seconds, e.g. .0000250
 local minGIOPDiffDelta = .01
+
+local tcpHandshakes = 0
 
 local giopStats = {
   messageCount = 0,
@@ -44,6 +52,19 @@ local giopStats = {
   locateMessageMin = -1,
   locateMessageMax = -1,
   locateMessageSum = 0
+};
+
+-- If true, check if messages are WXSXIO and print response time statistics.
+local checkXIO = false
+
+-- If checkXIO=true, update this to search for gaps between XIO requests and replies. In seconds, e.g. .0000250
+local minXIODiffDelta = .01
+
+local xioStats = {
+  messageCount = 0,
+  messageMin = -1,
+  messageMax = -1,
+  messageSum = 0
 };
 
 -- Internal variable
@@ -81,8 +102,18 @@ do
   local giop_message_type = Field.new("giop.type")
   local giop_request_id = Field.new("giop.request_id")
 
+  -- wxsxio
+  local wxsxio_message_type = Field.new("wxsxio.messagetype")
+  local wxsxio_senderrefid = Field.new("wxsxio.senderrefid")
+  local wxsxio_senderrefindex = Field.new("wxsxio.senderrefindex")
+  local wxsxio_senderrefendpointid = Field.new("wxsxio.senderrefendpointid")
+  local wxsxio_targetrefid = Field.new("wxsxio.targetrefid")
+  local wxsxio_targetrefindex = Field.new("wxsxio.targetrefindex")
+  local wxsxio_targetrefendpointid = Field.new("wxsxio.targetrefendpointid")
+
   local streams = {}
   local giopRequests = {}
+  local wxsxioRequests = {}
 
   local function init_listener()
     local tap = Listener.new("tcp")
@@ -150,6 +181,7 @@ do
               if diff >= minSynResponseDelta then
                 postsyn(stream, machine, "SYNACK", frametime, framenumber, diff)
               end
+	      tcpHandshakes = tcpHandshakes + 1
               machine.state = 2
             elseif flagsrst == 1 then
               if diff >= minSynResponseDelta then
@@ -195,6 +227,59 @@ do
           checkpacket(stream, nil, framenumber, frametime, isretransmit)
 
         end
+      end
+
+      if checkXIO then
+	local wxsxioMessageTypeObj = wxsxio_message_type()
+	if wxsxioMessageTypeObj ~= nil then
+	  local wxsxio_senderrefidObj = wxsxio_senderrefid()
+	  local wxsxio_targetrefidObj = wxsxio_targetrefid()
+	  if wxsxio_senderrefidObj ~= nil and wxsxio_targetrefidObj ~= nil then
+	    local senderrefid = tonumber(tostring(wxsxio_senderrefidObj))
+	    local senderrefindex = tonumber(tostring(wxsxio_senderrefindex()))
+	    local senderrefendpointid = tostring(wxsxio_senderrefendpointid())
+	    local map1 = wxsxioRequests[senderrefid]
+	    if map1 == nil then
+	      wxsxioRequests[senderrefid] = {}
+	    end
+	    local map2 = wxsxioRequests[senderrefid][senderrefindex]
+	    if map2 == nil then
+	      wxsxioRequests[senderrefid][senderrefindex] = {}
+	    end
+	    wxsxioRequests[senderrefid][senderrefindex][senderrefendpointid] = {
+	      requestFrame = framenumber,
+	      requestTime = frameepochtime
+	    };
+	    print("Request," .. framenumber .. "," .. frameepochtime .. "," .. senderrefid .. "," .. senderrefindex .. "," .. senderrefendpointid)
+          elseif wxsxio_targetrefidObj ~= nil then
+	    local targetrefid = tonumber(tostring(wxsxio_targetrefidObj))
+	    local targetrefindex = tonumber(tostring(wxsxio_targetrefindex()))
+	    local targetrefendpointid = tostring(wxsxio_targetrefendpointid())
+	    local request = wxsxioRequests[targetrefid]
+	    print("Response," .. framenumber .. "," .. frameepochtime .. "," .. targetrefid .. "," .. targetrefindex .. "," .. targetrefendpointid)
+	    if request ~= nil then
+	      request = request[targetrefindex]
+	    end
+	    if request ~= nil then
+	      request = request[targetrefendpointid]
+	    end
+	    if request ~= nil then
+	      local diff = checkDiff(request.requestTime, frameepochtime, minXIODiffDelta, "WXSXIO request and response frames", stream, machine, framenumber, frametime)
+	      xioStats.messageCount = xioStats.messageCount + 1
+	      xioStats.messageSum = xioStats.messageSum + diff
+	      if xioStats.messageMin == -1 then
+		xioStats.messageMin = diff
+	      elseif diff < xioStats.messageMin then
+		xioStats.messageMin = diff
+	      end
+	      if xioStats.messageMax == -1 then
+		xioStats.messageMax = diff
+	      elseif diff > xioStats.messageMin then
+		xioStats.messageMax = diff
+	      end
+	    end
+	  end
+	end
       end
 
       if checkGIOP then
@@ -299,13 +384,13 @@ do
     function scriptalert(alert, stream, machine, message, curtime, curframe)
       if machine ~= nil and machine.time ~= nil then
         if curtime ~= nil then
-          scriptprint(alert .. ": " .. message .. ". First SYN sent: " .. machine.time .. ", Stream " .. stream .. ", Frame: " .. machine.frame .. ", Source: " .. machine.source .. ", Destination: " .. machine.destination .. ", Current frame time: " .. curtime .. " (Frame: " .. curframe .. ")")
+          scriptprint(alert .. ": " .. message .. ". First SYN sent: " .. machine.time .. ", Stream " .. stream .. ", Frame: " .. machine.frame .. ", Source: " .. machine.source .. ", Destination: " .. machine.destination .. ", Frame time: " .. curtime .. " (Frame: " .. curframe .. ")")
         else
           scriptprint(alert .. ": " .. message .. ". First SYN sent: " .. machine.time .. ", Stream " .. stream .. ", Frame: " .. machine.frame .. ", Source: " .. machine.source .. ", Destination: " .. machine.destination)
         end
       else
         if curtime ~= nil then
-          scriptprint(alert .. ": " .. message .. ". Stream " .. stream .. ", Current frame time: " .. curtime .. " (Frame: " .. curframe .. ")")
+          scriptprint(alert .. ": " .. message .. ". Stream " .. stream .. ", Frame time: " .. curtime .. " (Frame: " .. curframe .. ")")
         else
           scriptprint(alert .. ": " .. message .. ". Stream " .. stream)
         end
@@ -314,7 +399,10 @@ do
 
     function checkpacket(stream, machine, framenumber, frametime, isretransmit)
       if isretransmit then
-        scriptwarning(stream, machine, "Frame " .. framenumber .. " is a suspected retransmission", frametime, framenumber)
+	if warnSuspectedRetransmission then
+	  scriptwarning(stream, machine, "Frame " .. framenumber .. " is a suspected retransmission", frametime, framenumber)
+	end
+	suspectedRetransmissionsCount = suspectedRetransmissionsCount + 1
       end
     end
 
@@ -351,21 +439,40 @@ do
         scriptprint("Last packet time: " .. lastTime)
       end
 
+      scriptprint("TCP handshakes: " .. tcpHandshakes)
+
+      if suspectedRetransmissionsCount > 0 then
+	scriptprint("WARNING: Suspected TCP retransmissions: " .. suspectedRetransmissionsCount)
+      end
+
       if checkGIOP then
         scriptprint("===================================")
         scriptprint("GIOP Statistics")
         scriptprint("-----------------------------")
         scriptprint("GIOP Non-Locate Messages: " .. giopStats.messageCount)
         if giopStats.messageCount > 0 then
-          scriptprint("GIOP Non-Locate Message Response Time Minimum: " .. giopStats.messageMin)
-          scriptprint("GIOP Non-Locate Message Response Time Maximum: " .. giopStats.messageMax)
-          scriptprint("GIOP Non-Locate Message Response Time Average: " .. (giopStats.messageSum / giopStats.messageCount))
+          scriptprint("GIOP Non-Locate Message Response Time Minimum (s): " .. giopStats.messageMin)
+          scriptprint("GIOP Non-Locate Message Response Time Maximum (s): " .. giopStats.messageMax)
+          scriptprint("GIOP Non-Locate Message Response Time Average (s): " .. (giopStats.messageSum / giopStats.messageCount))
         end
         scriptprint("GIOP Locate Messages: " .. giopStats.locateMessageCount)
         if giopStats.locateMessageCount > 0 then
-          scriptprint("GIOP Locate Message Response Time Minimum: " .. giopStats.locateMessageMin)
-          scriptprint("GIOP Locate Message Response Time Maximum: " .. giopStats.locateMessageMax)
-          scriptprint("GIOP Locate Message Response Time Average: " .. (giopStats.locateMessageSum / giopStats.locateMessageCount))
+          scriptprint("GIOP Locate Message Response Time Minimum (s): " .. giopStats.locateMessageMin)
+          scriptprint("GIOP Locate Message Response Time Maximum (s): " .. giopStats.locateMessageMax)
+          scriptprint("GIOP Locate Message Response Time Average (s): " .. (giopStats.locateMessageSum / giopStats.locateMessageCount))
+        end
+        scriptprint("===================================")
+      end
+
+      if checkXIO then
+        scriptprint("===================================")
+        scriptprint("XIO Statistics")
+        scriptprint("-----------------------------")
+        scriptprint("XIO Messages: " .. xioStats.messageCount)
+        if xioStats.messageCount > 0 then
+          scriptprint("XIO Message Response Time Minimum (s): " .. xioStats.messageMin)
+          scriptprint("XIO Message Response Time Maximum (s): " .. xioStats.messageMax)
+          scriptprint("XIO Message Response Time Average (s): " .. (xioStats.messageSum / xioStats.messageCount))
         end
         scriptprint("===================================")
       end
