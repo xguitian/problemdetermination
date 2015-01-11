@@ -14,9 +14,9 @@
 requiredLibraries = c("xts", "xtsExtra", "zoo", "txtplot")
 installedLibraries = requiredLibraries[!(requiredLibraries %in% installed.packages()[,"Package"])]
 if(length(installedLibraries)) install.packages(requiredLibraries, repos=c("http://cran.us.r-project.org","http://R-Forge.R-project.org"), quiet=FALSE)
+library(zoo, warn.conflicts=FALSE)
 library(xts, warn.conflicts=FALSE)
 library(xtsExtra, warn.conflicts=FALSE)
-library(zoo, warn.conflicts=FALSE)
 library(txtplot, warn.conflicts=FALSE)
 options(scipen=999)
 

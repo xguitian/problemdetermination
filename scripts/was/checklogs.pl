@@ -14,6 +14,9 @@ if (!defined($printfile) && @ARGV > 1) {
   $printfile = 1;
 }
 
+my $warnings = 0;
+my $errors = 0;
+
 foreach my $fileName (@ARGV) {
   open(my $fh, '<:encoding(UTF-8)', $fileName) or die "Could not open file '$fileName' $!";
   while (my $line = <$fh>) {
@@ -38,6 +41,12 @@ foreach my $fileName (@ARGV) {
         } else {
           $analysis = "Non-default trace: " . $1;
         }
+      } elsif ($type eq "W") {
+        $analysis = $line;
+        $warnings++;
+      } elsif ($type eq "E") {
+        $analysis = $line;
+        $errors++;
       } else {
         $continue = 0;
       }
@@ -68,3 +77,5 @@ foreach my $fileName (@ARGV) {
   }
   close($fh);
 }
+
+print "Warnings=$warnings, Errors=$errors\n";
