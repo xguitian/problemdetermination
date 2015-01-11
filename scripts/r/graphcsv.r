@@ -44,6 +44,7 @@ if(usexts) {
     data,
     main=paste(title, " (Timezone ", timezone, ")", sep=""),
     minor.ticks=FALSE,
+    major.ticks="seconds",
     yax.loc="left",
     auto.grid=TRUE,
     nc=cols,
