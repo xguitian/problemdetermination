@@ -10,6 +10,7 @@
 # cat input.csv | R --silent --no-save -f timeplot.r
 #
 # NOTE: plot.xts requires at least 3 data points.
+# WARNING: Newer versions of xtsExtra do not work. See http://stackoverflow.com/a/28590900/1293660
 
 requiredLibraries = c("xts", "xtsExtra", "zoo", "txtplot")
 installedLibraries = requiredLibraries[!(requiredLibraries %in% installed.packages()[,"Package"])]
