@@ -14,8 +14,16 @@ if ($line =~ /VMSTAT_INTERVAL = (\d+)$/) {
     $hasTime = 1;
     print "Time ($tz),CPU " . $interval . "s,Runqueue,Blocked,MemoryFree,ContextSwitches,Wait\n";
   }
+} elsif ($line =~ /^(\w+) (\w+) (\d+) (\d+:\d+:\d+) (\w+) (\d+)$/) {
+  $tz = $7;
+  $time = Time::Piece->strptime("$6-$2-$3 $4", "%Y-%b-%d %H:%M:%S");
+  $first = 0;
+  if (!$hasTime) {
+    $hasTime = 1;
+    print "Time ($tz),CPU " . $interval . "s,Runqueue,Blocked,MemoryFree,ContextSwitches,Wait\n";
+  }
 } elsif ($hasTime && $line =~ /^\s*(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s*$/) {
-  # Ignore first one. See Solaris chapter in WAS Performance Cookbook
+  # Ignore first one. See https://publib.boulder.ibm.com/httpserv/cookbook/Operating_Systems-Solaris.html#Operating_Systems-Solaris-Central_Processing_Unit_CPU-vmstat
   if ($first) {
     $time = $time + $interval;
     print $time->strftime("%Y-%m-%d %H:%M:%S") . "," . (100 - $22) . ",$1,$2,$5,$19,$3\n";
