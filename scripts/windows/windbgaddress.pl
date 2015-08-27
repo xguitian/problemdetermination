@@ -50,9 +50,12 @@ foreach my $i (0 .. $#ARGV) {
   my $threads = Math::BigInt->bzero();
   my $threadsoverhead = Math::BigInt->bzero();
   my $threadscount = 0;
+  my $largestfree = Math::BigInt->bzero();
+  my $largestfreeline = "";
   my %fragmentationHistogram = ();
+  my $lastendall = Math::BigInt->bzero();
   while(my $line = <$filehandle>) {
-    if ($line =~ /\*\s+([\da-fA-F`]+)\s+([\da-fA-F`]+)\s+([\da-fA-F`]+)\s+(.*)$/) {
+    if ($line =~ /^[\*|\|]\-?\s+([\da-fA-F`]+)\s+([\da-fA-F`]+)\s+([\da-fA-F`]+)\s+(.*)$/) {
       my $baseaddr = $1;
       my $endaddrplusone = $2;
       my $regionsize = $3;
@@ -62,7 +65,6 @@ foreach my $i (0 .. $#ARGV) {
       $endaddrplusone = processHex($endaddrplusone);
       $regionsize = processHex($regionsize);
       $usage =~ s/^\s+|\s+$//g;
-
       if ($baseaddr->bcmp($bar) < 0) {
         $total->badd($regionsize);
         if ($baseaddr->bcmp($max) > 0) {
@@ -71,13 +73,14 @@ foreach my $i (0 .. $#ARGV) {
         if ($baseaddr->bcmp($min) < 0) {
           $min = $baseaddr->copy();
         }
+        my $diffall = $baseaddr->copy()->bsub($lastendall);
         if ($usage =~ /Stack /) {
           $threads->badd($regionsize);
           $threadscount++;
 
           # If the last address was a stack, then check if there's overhead
           if ($laststack == 1) {
-            my $laststackdiff = $baseaddr->bsub($lastend);
+            my $laststackdiff = $baseaddr->copy()->bsub($lastend);
             if ($laststackdiff->bcmp($stackoverheaddiffmax) < 0) {
               $threads->badd($laststackdiff);
               $total->badd($laststackdiff);
@@ -86,14 +89,22 @@ foreach my $i (0 .. $#ARGV) {
           }
 
           $laststack = 1;
+          $lastend = $endaddrplusone->copy();
         } else {
           $laststack = 0;
-          my $diff = $baseaddr->bsub($lastend);
+          my $diff = $baseaddr->copy()->bsub($lastendall);
           $fragmentationHistogram{$diff}++;
           $totalFragmentation->badd($diff);
           if ($usage =~ /Heap \[Handle: ([^\]]+)\]/) {
             my $handle = $1;
             $totalHeaps->badd($regionsize);
+          }
+          if ($usage =~ /Free/) {
+            if ($regionsize->bcmp($largestfree) > 0) {
+              $largestfree = $regionsize->copy();
+              $largestfreeline = $line;
+              $totalFragmentation->badd($regionsize);
+            }
           }
           if ($usage =~ /unclassified/) {
             $totalUnclassified->badd($regionsize);
@@ -102,7 +113,11 @@ foreach my $i (0 .. $#ARGV) {
             $totalImages->badd($regionsize);
           }
         }
-        $lastend = $endaddrplusone->copy();
+        if ($diffall->bcmp($largestfree) > 0) {
+          $largestfree = $diffall->copy();
+          $largestfreeline = $line;
+        }
+        $lastendall = $endaddrplusone->copy();
       }
     }
   }
@@ -114,6 +129,7 @@ foreach my $i (0 .. $#ARGV) {
   print "Total Images under bar: " . getPrintable($totalImages) . "\n";
   print "Total unclassified under bar: " . getPrintable($totalUnclassified) . "\n";
   print "Total fragmentation under bar: " . getPrintable($totalFragmentation) . "\n";
+  print "Largest free region under bar: " . getPrintable($largestfree) . ": " . $largestfreeline . "\n";
   print "Total under bar: " . getPrintable($total) . "\n";
   if ($printDetailedFragmentation) {
     print "\n";

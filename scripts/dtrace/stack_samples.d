@@ -2,15 +2,15 @@
 /**
  * Usage: As root, run in a directory with sufficient disk space.
  * $ nohup /usr/sbin/dtrace -q -x ustackframes=10 -x stackframes=10 -s stack_samples.d > dtrace.out 2>&1 &
- * ... reproduce ...
+ * ... Run as long as needed ... To stop:
  * $ kill -INT `pgrep dtrace`
  */
 
-# pragma D option bufsize=8m
-# pragma D option dynvarsize=8m
+# pragma D option bufsize=16m
+# pragma D option dynvarsize=16m
 
 dtrace:::BEGIN {
-  printf("DTrace script started at %Y\n", walltimestamp);
+  printf("DTrace script started at %Y (%d)\n", walltimestamp, walltimestamp);
 }
 
 /**
