@@ -26,11 +26,4 @@ export TZ=`head -1 "$2.csv" | sed -n "s/^Time (\([^)]\+\)).*$/\1/p"`
 #    if hash eog 2>/dev/null; then
 #      eog "${INPUT_PNGFILE}" > /dev/null 2>&1 &
 #    fi
-GNUPLOT_INPUT="$2.csv"
-GNUPLOT_NUMCOLUMNS=`awk -F, 'NR == 1 { print NF; exit }' "${GNUPLOT_INPUT}"`
-GNUPLOT_NUMROWS=$(((${GNUPLOT_NUMCOLUMNS} - 1) / 2))
-GNUPLOT_TMP=/tmp/gnuplots.gpi
-echo "set multiplot layout ${GNUPLOT_NUMROWS},2 scale 1.0,0.8" > ${GNUPLOT_TMP}
-for ((GI=2;GI<=${GNUPLOT_NUMCOLUMNS};GI++)) do printf "plot '${GNUPLOT_INPUT}' using 1:%d\n" $GI; done >> ${GNUPLOT_TMP}
-echo "unset multiplot; pause -1" >> ${GNUPLOT_TMP}
-gnuplot "${DIR}/../gnuplot/graphcsv.gpi" ${GNUPLOT_TMP}
+"${DIR}/../gnuplot/graphcsv.sh" "$2.csv"

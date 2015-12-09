@@ -17,10 +17,12 @@ cat "$2" |\
   perl -n "${DIR}/../ihs/accesslog.pl" \
     > "$2.csv"
 export TZ=`head -1 "$2.csv" | sed -n "s/^Time (\([^)]\+\)).*$/\1/p"`
-R --silent --no-save -f "${DIR}/../r/graphcsv.r" < "$2.csv" && \
-  if hash readlink 2>/dev/null; then
-    readlink -f "${INPUT_PNGFILE}" 2>/dev/null
-  fi &&
-    if hash eog 2>/dev/null; then
-      eog "${INPUT_PNGFILE}" > /dev/null 2>&1 &
-    fi
+#R --silent --no-save -f "${DIR}/../r/graphcsv.r" < "$2.csv" && \
+#  if hash readlink 2>/dev/null; then
+#    readlink -f "${INPUT_PNGFILE}" 2>/dev/null
+#  fi &&
+#    if hash eog 2>/dev/null; then
+#      eog "${INPUT_PNGFILE}" > /dev/null 2>&1 &
+#    fi
+"${DIR}/../gnuplot/graphcsv.sh" "$2.csv"
+

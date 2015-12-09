@@ -18,7 +18,9 @@ grep VMSTAT_INTERVAL ${SCREEN} |\
             perl -n "${DIR}/linperf_vmstat.pl" \
               > "${INPUT_TITLE}.csv"
 export TZ=`head -1 "${INPUT_TITLE}.csv" | sed 's/Time (\([^)]\+\)).*/\1/g'`
-R --silent --no-save -f "${DIR}/../r/graphcsv.r" < "${INPUT_TITLE}.csv"
-if hash eog 2>/dev/null; then
-  eog "$INPUT_TITLE.png" > /dev/null 2>&1 &
-fi
+#R --silent --no-save -f "${DIR}/../r/graphcsv.r" < "${INPUT_TITLE}.csv"
+#if hash eog 2>/dev/null; then
+#  eog "$INPUT_TITLE.png" > /dev/null 2>&1 &
+#fi
+"${DIR}/../gnuplot/graphcsv.sh" "${INPUT_TITLE}.csv"
+

@@ -29,20 +29,15 @@ set datafile sep ','
 set grid
 
 set style data lines
-#set format y '%.0f'
-set format "%'.0f"
-
-#set bmargin 5
+set format y '%.0f'
 
 #set format x "%m/%d %H:%M"
 set format x "%H:%M"
+
+# Change position of legend
+#set key left top
 
 # Disable legend
 #unset key
 
 set key autotitle columnhead
-
-#set multiplot layout 2,2 scale 1.0,0.8
-#plot filename using 1:2 title columnhead
-
-#set format x ""
