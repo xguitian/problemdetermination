@@ -14,7 +14,7 @@ if ($line =~ /VMSTAT_INTERVAL = (\d+)$/) {
     $hasTime = 1;
     print "Time ($tz),CPU " . $interval . "s,Runqueue,Blocked,MemoryFree,ContextSwitches,Wait\n";
   }
-} elsif ($line =~ /^(\w+) (\w+) (\d+) (\d+:\d+:\d+) (\w+) (\d+)$/) {
+} elsif ($line =~ /^(\w+)\s+(\w+)\s+(\d+)\s+(\d+:\d+:\d+)\s+(\w+)\s+(\d+)$/) {
   $tz = $7;
   $time = Time::Piece->strptime("$6-$2-$3 $4", "%Y-%b-%d %H:%M:%S");
   $first = 0;
