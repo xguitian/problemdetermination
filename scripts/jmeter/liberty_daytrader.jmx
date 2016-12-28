@@ -1238,12 +1238,12 @@
           </elementProp>
           <elementProp name="maximumuid" elementType="Argument">
             <stringProp name="Argument.name">maximumuid</stringProp>
-            <stringProp name="Argument.value">${__P(TOPUID,14999)}</stringProp>
+            <stringProp name="Argument.value">${__P(TOPUID,99)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="maximumsid" elementType="Argument">
             <stringProp name="Argument.name">maximumsid</stringProp>
-            <stringProp name="Argument.value">${__P(STOCKS,9999)}</stringProp>
+            <stringProp name="Argument.value">${__P(STOCKS,99)}</stringProp>
             <stringProp name="Argument.metadata">=</stringProp>
           </elementProp>
           <elementProp name="VIEWSTATE" elementType="Argument">
