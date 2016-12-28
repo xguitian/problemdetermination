@@ -946,28 +946,28 @@
                         </elementProp>
                         <elementProp name="Full Name" elementType="HTTPArgument">
                           <boolProp name="HTTPArgument.always_encode">true</boolProp>
-                          <stringProp name="Argument.value">first:${__Random(0,999,)} last:${__Random(0,4999,)}</stringProp>
+                          <stringProp name="Argument.value">first:${__Random(0,99,)} last:${__Random(0,99,)}</stringProp>
                           <stringProp name="Argument.metadata">=</stringProp>
                           <boolProp name="HTTPArgument.use_equals">true</boolProp>
                           <stringProp name="Argument.name">Full Name</stringProp>
                         </elementProp>
                         <elementProp name="snail mail" elementType="HTTPArgument">
                           <boolProp name="HTTPArgument.always_encode">true</boolProp>
-                          <stringProp name="Argument.value">first:${__Random(0,999,)} last:${__Random(0,4999,)}</stringProp>
+                          <stringProp name="Argument.value">first:${__Random(0,99,)} last:${__Random(0,99,)}</stringProp>
                           <stringProp name="Argument.metadata">=</stringProp>
                           <boolProp name="HTTPArgument.use_equals">true</boolProp>
                           <stringProp name="Argument.name">snail mail</stringProp>
                         </elementProp>
                         <elementProp name="email" elementType="HTTPArgument">
                           <boolProp name="HTTPArgument.always_encode">true</boolProp>
-                          <stringProp name="Argument.value">uid:${logincounter}@${__Random(0,100,)}.com</stringProp>
+                          <stringProp name="Argument.value">uid:${logincounter}@${__Random(0,99,)}.com</stringProp>
                           <stringProp name="Argument.metadata">=</stringProp>
                           <boolProp name="HTTPArgument.use_equals">true</boolProp>
                           <stringProp name="Argument.name">email</stringProp>
                         </elementProp>
                         <elementProp name="user id" elementType="HTTPArgument">
                           <boolProp name="HTTPArgument.always_encode">true</boolProp>
-                          <stringProp name="Argument.value">ru:${logincounter}${__threadNum}:${__time(HMS)}${__Random(0,999,)}</stringProp>
+                          <stringProp name="Argument.value">ru:${logincounter}${__threadNum}:${__time(HMS)}${__Random(0,99,)}</stringProp>
                           <stringProp name="Argument.metadata">=</stringProp>
                           <boolProp name="HTTPArgument.use_equals">true</boolProp>
                           <stringProp name="Argument.name">user id</stringProp>
